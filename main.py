@@ -1,19 +1,41 @@
 import os
 import csv
 import pypandoc
-from tkinter import Tk
-from tkinter.filedialog import askdirectory
-from tkinter import simpledialog
+from tkinter import Tk, simpledialog, messagebox
+from tkinter.filedialog import askdirectory, asksaveasfilename
+from tkinter import ttk
 
 def main():
-    Tk().withdraw()
+    root = Tk()
+    root.withdraw()
 
-    carpeta = askdirectory()
+    carpeta = askdirectory(title="Seleccione la carpeta con archivos .doc/.docx")
 
     if not carpeta:
         return
 
-    mnum = simpledialog.askstring("Pregunta", "Cuál es el M.**? (Ejemplo: M.23)")
+    mnum = simpledialog.askstring("Pregunta", "Cuál es el M.**? (Ejemplo: M.23)", parent=root)
+    if not mnum:
+        return
+
+    # Elegir dónde guardar los archivos de salida
+    csv_path = asksaveasfilename(
+        title="Guardar CSV de salida",
+        defaultextension=".csv",
+        filetypes=[("CSV", "*.csv"), ("Todos", "*.*")],
+        initialfile="output.csv",
+    )
+    if not csv_path:
+        return
+
+    error_path = asksaveasfilename(
+        title="Guardar archivo de errores",
+        defaultextension=".txt",
+        filetypes=[("Texto", "*.txt"), ("Todos", "*.*")],
+        initialfile="errores.txt",
+    )
+    if not error_path:
+        return
 
     rows = [
         [
@@ -48,17 +70,35 @@ def main():
 
     error_de_archivo = []
 
-    for file_name in os.listdir(carpeta):
+    # Preparar lista de archivos a procesar y barra de progreso
+    archivos = [f for f in os.listdir(carpeta) if '.doc' in f]
 
-        print(file_name, "procesado")
-        if '.doc' not in file_name:
-            continue
+    # Mostrar ventana con barra de progreso
+    root.deiconify()
+    root.title("Progreso de conversión Word → CSV")
+    status_var = ttk.Label(root, text=f"0 / {len(archivos)} procesados")
+    status_var.pack(padx=12, pady=(12, 6))
+    file_var = ttk.Label(root, text="Listo")
+    file_var.pack(padx=12, pady=(0, 6))
+    progress = ttk.Progressbar(root, orient='horizontal', mode='determinate', maximum=max(len(archivos), 1))
+    progress.pack(fill='x', padx=12, pady=(0, 12))
+    root.update_idletasks()
+
+    procesados = 0
+
+    for file_name in archivos:
+        file_var.config(text=f"Procesando: {file_name}")
+        root.update_idletasks()
+
         try:
-            output = pypandoc.convert_file(carpeta + '/' + file_name, 'plain', outputfile="tmp.txt")
-        except: 
+            output = pypandoc.convert_file(os.path.join(carpeta, file_name), 'plain', outputfile="tmp.txt")
+        except Exception:
             error_de_archivo.append(file_name)
+            procesados += 1
+            progress['value'] = procesados
+            status_var.config(text=f"{procesados} / {len(archivos)} procesados")
+            root.update_idletasks()
             continue
-
 
         with open("tmp.txt", "r") as file:
             document = ""
@@ -112,11 +152,30 @@ def main():
             except Exception as e:
                 error_de_archivo.append(file_name)
 
-    with open('output.csv', 'w', encoding='utf-8-sig') as file:
+        # Actualizar progreso tras cada archivo
+        procesados += 1
+        progress['value'] = procesados
+        status_var.config(text=f"{procesados} / {len(archivos)} procesados")
+        root.update_idletasks()
+
+    with open(csv_path, 'w', encoding='utf-8-sig') as file:
         writer = csv.writer(file, delimiter='|')
         writer.writerows(rows)
 
-    with open('error.txt', 'w') as file:
+    with open(error_path, 'w') as file:
         file.write("\n".join(error_de_archivo))
+
+    file_var.config(text="Finalizado")
+    status_var.config(text=f"{procesados} / {len(archivos)} procesados")
+    progress['value'] = progress['maximum']
+    root.update_idletasks()
+
+    messagebox.showinfo(
+        "Conversión completada",
+        f"CSV guardado en:\n{csv_path}\n\nErrores guardados en:\n{error_path}\n\nArchivos procesados: {procesados}",
+        parent=root,
+    )
+
+    root.destroy()
 
 main()

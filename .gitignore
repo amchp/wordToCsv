@@ -1,6 +1,7 @@
 # Created by venv; see https://docs.python.org/3/library/venv.html
 bin
 Casos
+Casos U de A
 include
 lib
 .DS_Store
@@ -9,3 +10,4 @@ output.csv
 pyvenv.cfg
 tmp.txt
 ~$3-04899.docx
+CACHEDIR.TAG

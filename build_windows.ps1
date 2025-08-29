@@ -5,7 +5,8 @@
 $ErrorActionPreference = 'Stop'
 
 # 1) Find pandoc (fallback to the default install path)
-$pandocPath = { $pandocPath = 'C:\Program Files\Pandoc\pandoc.exe' }
+$pandocPath = (Get-Command pandoc -ErrorAction SilentlyContinue).Source
+if (-not $pandocPath) { $pandocPath = 'C:\Program Files\Pandoc\pandoc.exe' }
 if (-not (Test-Path $pandocPath)) { throw "Pandoc not found at: $pandocPath" }
 
 Write-Host "Using pandoc at: $pandocPath"

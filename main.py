@@ -191,7 +191,7 @@ def main():
             start_ind = text_acc.find(start_token)
             end_ind = text_acc.find(end_token, start_ind)
             if start_ind != -1 and end_ind != -1:
-                result = text_acc[start_ind + len(start_token):end_ind].strip().replace('\n', '')
+                result = text_acc[start_ind + len(start_token):end_ind].strip().replace('\r\n', '\n').replace('\n', '')
                 add_token(start_token, result)
 
         if "Servicio:" in row:
